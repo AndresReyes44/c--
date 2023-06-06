@@ -13,6 +13,8 @@ struct lex_process* lex_process_create(struct compile_process* compiler, struct 
     process->private = private; //asignamos la estructura privada
     process->pos.line = 1; //inicializamos la linea
     process->pos.col = 1; //inicializamos la columna
+
+    
     return process;
 }
 

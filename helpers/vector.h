@@ -148,4 +148,6 @@ size_t vector_element_size(struct vector* vector);
  */
 struct vector* vector_clone(struct vector* vector);
 
+
+
 #endif

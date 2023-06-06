@@ -31,6 +31,7 @@ struct vector *vector_create_no_saves(size_t esize)
     vector->count = 0;
 }
 
+
 size_t vector_total_size(struct vector *vector)
 {
     return vector->count * vector->esize;
@@ -454,3 +455,6 @@ int vector_count(struct vector *vector)
 {
     return vector->count;
 }
+
+
+

@@ -27,7 +27,8 @@ struct pos
     case '6':        \
     case '7':        \
     case '8':        \
-    case '9'
+    case '9':        \
+    case '.'
 
 #define OPERATOR_CASE_EXCLUDING_DIVISION \
     case '+':                            \
@@ -38,16 +39,14 @@ struct pos
     case '<':                            \
     case '>':                            \
     case ',':                            \
-    case '.':                            \
     case '(':                            \
     case '['
 
-
 #define SYMBOL_CASE \
-    case '{':      \
-    case '}':      \
-    case ';':      \
-    case ')':      \
+    case '{':       \
+    case '}':       \
+    case ';':       \
+    case ')':       \
     case ']'
 
 // Definimos los errores DEL LEXER
@@ -66,7 +65,8 @@ enum
     TOKEN_TYPE_NUMBER,
     TOKEN_TYPE_STRING,
     TOKEN_TYPE_COMMENT,
-    TOKEN_TYPE_NEWLINE
+    TOKEN_TYPE_NEWLINE,
+    TOKEN_TYPE_FLOAT
 };
 
 // Definimos como se comporta cada token
@@ -83,6 +83,7 @@ struct token
         unsigned lnum;
         unsigned long long llnum;
         void *any;
+        double dval;
     };
 
     // espacios en blancos entre tokens
@@ -125,6 +126,12 @@ struct lex_process
     void *private; // estructura privada
 };
 
+typedef struct
+{
+    const char *type;
+    const char *value;
+} Token;
+
 // Creamos el proceso de compilacion
 struct compile_process
 {
@@ -139,7 +146,7 @@ struct compile_process
         const char *abs_path;
     } cfile;
 
-    struct vector* token_vec; //vector de tokens
+    struct vector *token_vec; // vector de tokens
     // El archivo de salida
     FILE *ofile;
 };
@@ -163,10 +170,11 @@ void *lex_process_private(struct lex_process *process);
 struct vector *lex_process_tokens(struct lex_process *process);
 int lex(struct lex_process *process);
 
-//construccion de tokens para el archivo de entrada
-struct lex_process* tokens_build_for_string(struct compile_process* compiler, const char* str);
+// construccion de tokens para el archivo de entrada
+struct lex_process *tokens_build_for_string(struct compile_process *compiler, const char *str);
 
 // funciones para crear tokens
-bool token_is_keyword(struct token *token, const char* value);
+bool token_is_keyword(struct token *token, const char *value);
+void printTokens(struct vector *token_vec);
 
 #endif
