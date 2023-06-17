@@ -19,12 +19,12 @@ bool lex_is_in_expression();
 static struct lex_process *lex_process;
 // Definimos el token temporal
 static struct token tmp_token;
-
+// visualiza el siguiente caracter
 static char peekc()
 {
     return lex_process->function->peek_char(lex_process);
 }
-
+// lee el siguiente caracter
 static char nextc()
 {
     char c = lex_process->function->next_char(lex_process); // leemos el siguiente caracter
@@ -43,15 +43,17 @@ static char nextc()
 
     return c;
 }
-
+// devuelve el caracter
 static void pushc(char c)
 {
     lex_process->function->push_char(lex_process, c);
 }
+// posicion en el archivo
 static struct pos lex_file_position()
 {
     return lex_process->pos;
 }
+// crea los tokens
 struct token *token_create(struct token *_token)
 {
     memcpy(&tmp_token, _token, sizeof(struct token));
@@ -63,10 +65,12 @@ struct token *token_create(struct token *_token)
 
     return &tmp_token;
 }
+// lee el ultimo token
 static struct token *lexer_last_token()
 {
     return vector_back_or_null(lex_process->token_vec);
 }
+// espacios en blanco
 static struct token *handle_whitespace()
 {
     struct token *last_token = lexer_last_token();
@@ -77,14 +81,15 @@ static struct token *handle_whitespace()
     nextc();
     return read_next_token();
 }
-
+// solo puede aceptar puros numeros o numeros . numeros
 const char *read_number_str()
 {
     const char *num = NULL;
     struct buffer *buffer = buffer_create();
     char c = compile_process_peek_char(lex_process);
 
-    if (c == '.') {
+    if (c == '.')
+    {
         // Si el primer caracter es un punto, no se considera un número válido
         compiler_error(lex_process->compiler, "Invalid symbol\n");
     }
@@ -98,7 +103,8 @@ const char *read_number_str()
         num_chars++;
     }
 
-    if (num_chars == 0 || buffer->data[num_chars-1] == '.') {
+    if (num_chars == 0 || buffer->data[num_chars - 1] == '.')
+    {
         // Si no se han leído caracteres o el último caracter es un punto, no es un número válido
         compiler_error(lex_process->compiler, "Invalid number\n");
         return NULL;
@@ -107,32 +113,35 @@ const char *read_number_str()
     buffer_write(buffer, 0x00);
     return buffer_ptr(buffer);
 }
-
+// lee el numero
 double read_number()
 {
     const char *s = read_number_str();
     return strtod(s, NULL);
 }
-
+// crea el token tipo numero y si el numero que leyo no es igual a la variable long lo mueve a float
 struct token *token_make_number_for_value(double number)
 {
     struct token *token = token_create(&(struct token){.type = TOKEN_TYPE_NUMBER});
 
-    if (number - (unsigned long long)number == 0) {
+    if (number - (unsigned long long)number == 0)
+    {
         token->llnum = (unsigned long long)number;
-    } else {
+    }
+    else
+    {
         token->type = TOKEN_TYPE_FLOAT; // Establecer el tipo como TOKEN_TYPE_FLOAT
         token->dval = number;
     }
 
     return token;
 }
-
+// manda a llamar a leer el numero para convertirlo en token
 struct token *token_make_number()
 {
     return token_make_number_for_value(read_number());
 }
-
+// recibe comillas y lee hasta que encuentra las comillas de cierre
 static struct token *token_make_string(char start_delim, char end_delim)
 {
     struct buffer *buf = buffer_create();
@@ -151,16 +160,17 @@ static struct token *token_make_string(char start_delim, char end_delim)
     buffer_write(buf, 0x00);
     return token_create(&(struct token){.type = TOKEN_TYPE_STRING, .sval = buffer_ptr(buf)});
 }
-
+// deben de ser tratados como uno
 static bool op_treated_as_one(char op)
 {
     return op == '(' || op == '[' || op == ',' || op == '*';
 }
-
+// operadores sencillos
 static bool is_single_operator(char op)
 {
     return op == '+' || op == '-' || op == '/' || op == '!' || op == '=' || op == '<' || op == '>';
 }
+// secuencias validas de operadores
 bool op_valid(const char *op)
 {
     return S_EQ(op, "+") ||
@@ -178,7 +188,7 @@ bool op_valid(const char *op)
            S_EQ(op, "[") ||
            S_EQ(op, ",");
 }
-
+// devolver operador
 void read_op_flush_back_keep(struct buffer *buffer)
 {
     const char *data = buffer_ptr(buffer);
@@ -193,6 +203,7 @@ void read_op_flush_back_keep(struct buffer *buffer)
         pushc(data[i]);
     }
 }
+// leer el operador y hacer la comparacion
 const char *read_op()
 {
     bool single_operator = true;
@@ -228,7 +239,7 @@ const char *read_op()
 
     return ptr;
 }
-
+// si abrio el parentesis )
 static void lex_new_expression()
 {
     lex_process->current_expression_count++;
@@ -237,7 +248,7 @@ static void lex_new_expression()
         lex_process->parentheses_buffer = buffer_create();
     }
 }
-
+// si cerro el parentesis )
 static void lex_finish_expression()
 {
     lex_process->current_expression_count--;
@@ -246,12 +257,13 @@ static void lex_finish_expression()
         compiler_error(lex_process->compiler, "Unexpected closing bracket\n");
     }
 }
-
+// si estas dentro de parentesis ()
 bool lex_is_in_expression()
 {
     return lex_process->current_expression_count > 0;
 }
 
+// compara si el identificador es keyword
 bool is_keyword(const char *str)
 {
     return S_EQ(str, "int") ||
@@ -278,6 +290,7 @@ bool is_keyword(const char *str)
            S_EQ(str, "RETURN");
 }
 
+// lee el tipo de operador que va almacenar
 static struct token *token_make_operator_or_string()
 {
     char op = peekc();
@@ -289,7 +302,7 @@ static struct token *token_make_operator_or_string()
     }
     return token;
 }
-
+// analizis para reconocer el cierre del comentario
 struct token *token_make_multiline_comment()
 {
     struct buffer *buffer = buffer_create();
@@ -314,7 +327,7 @@ struct token *token_make_multiline_comment()
     }
     return token_create(&(struct token){.type = TOKEN_TYPE_COMMENT, .sval = buffer_ptr(buffer)});
 }
-
+// analizis para verificar si / es operador o si le sigue * para comentario
 struct token *handle_comment()
 {
     char c = peekc();
@@ -333,7 +346,7 @@ struct token *handle_comment()
 
     return NULL;
 }
-
+// creamos los simbolos y procesamos )
 static struct token *token_make_symbol()
 {
     char c = nextc();
@@ -345,7 +358,7 @@ static struct token *token_make_symbol()
     struct token *token = token_create(&(struct token){.type = TOKEN_TYPE_SYMBOL, .cval = c});
     return token;
 }
-
+// Procesamos los tipos de caracteres que acepta el identificador y los evalua con los Keywords para procesarlos como keywords
 static struct token *token_make_identifier_or_keyword()
 {
     struct buffer *buffer = buffer_create();
@@ -362,7 +375,7 @@ static struct token *token_make_identifier_or_keyword()
 
     return token_create(&(struct token){.type = TOKEN_TYPE_IDENTIFIER, .sval = buffer_ptr(buffer)});
 }
-
+// aqui empieza la vizualizacion de si es identificador o palabra clave
 struct token *read_special_token()
 {
     char c = peekc();
@@ -373,7 +386,7 @@ struct token *read_special_token()
 
     return NULL;
 }
-
+// salto de linea
 struct token *token_make_newline()
 {
     nextc();
@@ -485,7 +498,12 @@ struct lex_process *tokens_build_for_string(struct compile_process *compiler, co
 
     return lex_process;
 }
+/*
+Apartir de aqui empieza el proceso para la impresion de tokens
+Lo que hace es que atravez de su variable tipo
+analiza sus valores les asigna un numero y los imprime
 
+*/
 typedef struct
 {
     char *name;
@@ -522,21 +540,26 @@ int evaluateOperator(const char *operator)
         return 14;
     else if (strcmp(operator, "=") == 0)
         return 15;
-    else if (strcmp(operator, "!") == 0)
-        return 16;
     else if (strcmp(operator, "<") == 0)
+        return 16;
+    else if (strcmp(operator, "<=") == 0)
         return 17;
     else if (strcmp(operator, ">") == 0)
         return 18;
-    else if (strcmp(operator, ",") == 0)
+    else if (strcmp(operator, ">=") == 0)
         return 19;
-    else if (strcmp(operator, ".") == 0)
+    else if (strcmp(operator, "==") == 0)
         return 20;
-    else if (strcmp(operator, "(") == 0)
+    else if (strcmp(operator, "!=") == 0)
         return 21;
-    else if (strcmp(operator, "[") == 0)
+    else if (strcmp(operator, ",") == 0)
         return 22;
-
+    else if (strcmp(operator, "[") == 0)
+        return 23;
+    else if (strcmp(operator, "(") == 0)
+        return 24;
+    else if (strcmp(operator, "/") == 0)
+        return 25;
     return -1;
 }
 
@@ -545,17 +568,17 @@ int evaluateSymbol(char symbol)
     switch (symbol)
     {
     case '{':
-        return 23;
-    case '}':
-        return 24;
-    case ';':
-        return 25;
-    case ')':
         return 26;
-    case ']':
+    case '}':
         return 27;
-    default:
+    case ';':
         return 28;
+    case ')':
+        return 29;
+    case ']':
+        return 30;
+    default:
+        return -1;
     }
 }
 
@@ -737,6 +760,8 @@ void printTokens(struct vector *token_vec)
     initializeNumberCounts(&numberCounts);
 
     size_t numElements = vector_count(token_vec);
+    int integerTokens[MAX_TOKENS];
+    int integerCount = 0;
 
     for (size_t i = 0; i < numElements; i++)
     {
@@ -749,25 +774,33 @@ void printTokens(struct vector *token_vec)
         case TOKEN_TYPE_IDENTIFIER:
         {
             int count = addIdentifier(&identifierTable, token->sval);
-            printf("<28,%d>\n", count);
+            integerTokens[integerCount] = 31;
+            integerCount++;
+            // printf("<31,%d>\n", count);
             break;
         }
         case TOKEN_TYPE_KEYWORD:
         {
             int keywordValue = evaluateKeyword(token->sval);
-            printf("<%d>\n", keywordValue);
+            integerTokens[integerCount] = keywordValue;
+            integerCount++;
+            // printf("<%d>\n", keywordValue);
             break;
         }
         case TOKEN_TYPE_OPERATOR:
         {
             int operatorValue = evaluateOperator(token->sval);
-            printf("<%d>\n", operatorValue);
+            integerTokens[integerCount] = operatorValue;
+            integerCount++;
+            // printf("<%d>\n", operatorValue);
             break;
         }
         case TOKEN_TYPE_SYMBOL:
         {
             int symbolValue = evaluateSymbol(token->cval);
-            printf("<%d>\n", symbolValue);
+            integerTokens[integerCount] = symbolValue;
+            integerCount++;
+            // printf("<%d>\n", symbolValue);
             break;
         }
         case TOKEN_TYPE_NUMBER:
@@ -775,12 +808,17 @@ void printTokens(struct vector *token_vec)
             char numStr[20];
             snprintf(numStr, sizeof(numStr), "%llu", token->llnum);
             int count = addNumber(&numberCounts, numStr);
-            printf("<29,%d>\n", count);
+            integerTokens[integerCount] = 32;
+            integerCount++;
+            // printf("<32,%d>\n", count);
             break;
         }
         case TOKEN_TYPE_STRING:
         {
-            printf("<30>\n");
+            integerTokens[integerCount] = 33;
+            integerCount++;
+            // printf("<33>\n");
+
             break;
         }
         case TOKEN_TYPE_FLOAT:
@@ -788,7 +826,9 @@ void printTokens(struct vector *token_vec)
             char numStr[20];
             snprintf(numStr, sizeof(numStr), "%f", token->dval);
             int count = addNumber(&numberCounts, numStr);
-            printf("<29,%d>\n", count);
+            integerTokens[integerCount] = 34;
+            integerCount++;
+            // printf("<29,%d>\n", count);
             break;
         }
         case TOKEN_TYPE_COMMENT:
@@ -801,21 +841,30 @@ void printTokens(struct vector *token_vec)
         }
         }
     }
+    /*
+        printf("Symbol Table for IDs\n");
+        printf("Entry\t contents\n");
+        for (int i = 0; i < identifierTable.size; i++)
+        {
+            printf("%d\t %s \n", i, identifierTable.entries[i].name);
+        }
 
-    printf("Symbol Table for IDs\n");
-    printf("Entry\t contents\n");
-    for (int i = 0; i < identifierTable.size; i++)
+        printf("Symbol Table for numers\n");
+        printf("Entry\t contents\n");
+        for (int i = 0; i < numberCounts.size; i++)
+        {
+            printf("%d\t %s\n", i, numberCounts.types[i]);
+        }
+    */
+    printf("Number Tokens\n");
+    printf("Index\t Value\n");
+    printf("Número de tokens enteros: %d\n", integerCount);
+    printf("Tokens enteros:\n");
+    for (int i = 0; i < integerCount; i++)
     {
-        printf("%d\t %s \n", i, identifierTable.entries[i].name);
+        printf("%d\n", integerTokens[i]);
     }
-
-    printf("Symbol Table for numers\n");
-    printf("Entry\t contents\n");
-    for (int i = 0; i < numberCounts.size; i++)
-    {
-        printf("%d\t %s\n", i, numberCounts.types[i]);
-    }
-
+    program(integerTokens, integerCount);
     freeIdentifierTable(&identifierTable);
     freeNumberCounts(&numberCounts);
 }

@@ -5,8 +5,11 @@
 #include <stdbool.h>
 #include <string.h>
 
+// macro para comparar dos cadenas
 #define S_EQ(str, str2) \
     (str && str2 && (strcmp(str, str2)) == 0)
+
+#define MAX_TOKENS 100000
 
 // Posicion en el archivo
 struct pos
@@ -30,6 +33,7 @@ struct pos
     case '9':        \
     case '.'
 
+// Operadores exliyendo el /
 #define OPERATOR_CASE_EXCLUDING_DIVISION \
     case '+':                            \
     case '-':                            \
@@ -42,6 +46,7 @@ struct pos
     case '(':                            \
     case '['
 
+// symbolos permitidos
 #define SYMBOL_CASE \
     case '{':       \
     case '}':       \
@@ -176,5 +181,10 @@ struct lex_process *tokens_build_for_string(struct compile_process *compiler, co
 // funciones para crear tokens
 bool token_is_keyword(struct token *token, const char *value);
 void printTokens(struct vector *token_vec);
+
+// parsero
+// Function prototypes
+void program(int intTokens[], int counts);
+
 
 #endif

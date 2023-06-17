@@ -16,10 +16,9 @@ int miniloc(float a[], int low, int high){
  while (i < high){
  if (a[i] < x){
  y = a[i];
- k = i;
+ k = i
  }
  i = i + 1;
  }
  return k;
 }/* END of miniloc() */
-.
